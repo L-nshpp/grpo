@@ -173,7 +173,6 @@ def sql_optimize(data_source, solution_str, ground_truth, extra_info=None):
         log_execution_detail(log_info)
         return 0.0
 
-    # 2. 解析 Patch
     patch_content = extract_patch_from_response(solution_str)
     if not patch_content:
         log_info["status"] = "patch_extract_failed"
@@ -190,7 +189,6 @@ def sql_optimize(data_source, solution_str, ground_truth, extra_info=None):
         log_execution_detail(log_info)
         return -1.0 
 
-    # 3. 连接数据库
     conn, cursor, conn_err = get_db_cursor(db_key)
     if conn_err:
         log_info["status"] = "db_connect_failed"
@@ -219,21 +217,21 @@ def sql_optimize(data_source, solution_str, ground_truth, extra_info=None):
             reward = -1.0 # 语法错误
 
         else:
-            # 跑通了，检查结果
+            
             curr_hash = hashlib.md5(str(pred_res).encode()).hexdigest()
             
             if curr_hash == gt_res_hash:
-                # 结果正确！现在检查是否回退
+                # 结果正确，检查是否回退
                 is_reverted = normalize_sql(pred_sql) == normalize_sql(base_sql)
                 
                 if is_reverted:
                     # 直接回退到 Base SQL
                     log_info["status"] = "success_revert_bad"
-                    reward = 0.1  # 惩罚分，告诉模型这不对
+                    reward = 0.1  
                 else:
-                    #  成功：结果正确，且保留了策略（代码不同于 Base）
+                    #  结果正确，且保留了策略（代码不同于 Base）
                     log_info["status"] = "success_fixed_strategy"
-                    reward = 1.0  # 满分
+                    reward = 1.0  
             else:
                 # 结果不对
                 log_info["status"] = "success_mismatch"
