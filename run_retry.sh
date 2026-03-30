@@ -1,15 +1,8 @@
 #!/bin/bash
 set -x
 
-# ==============================================================================
-# 1. 📂 关键路径配置 (利用 37TB 的 /data 盘)
-# ==============================================================================
-
-# 获取当前脚本所在目录 (代码目录)
 export PROJ_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-# --- [重点修改] 将数据存储指向大硬盘 ---
-# 假设你的用户名是 shipei，我们在 /data 下为你建个专属目录
 export DATA_ROOT="/data/shipei/experiments_data_0117/sql_optimize"
 mkdir -p "$DATA_ROOT"
 
@@ -20,18 +13,14 @@ export OUTPUT_DIR="$DATA_ROOT/checkpoints"
 # 3. 文本日志路径
 export LOG_DIR="$DATA_ROOT/logs"
 
-# 创建这些目录
 mkdir -p "$WANDB_DIR"
 mkdir -p "$OUTPUT_DIR"
 mkdir -p "$LOG_DIR"
 
-# ==============================================================================
-# 2. ⚙️ 环境与 W&B 配置
-# ==============================================================================
 export PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True"
 export CUDA_VISIBLE_DEVICES=3,2,1,0
 nproc_per_node=4
-export RAY_TMPDIR="/data/shipei/ray_tmp" # Ray 临时文件也扔到大盘
+export RAY_TMPDIR="/data/shipei/ray_tmp" 
 mkdir -p "$RAY_TMPDIR"
 
 # 模型配置
@@ -44,17 +33,13 @@ export WANDB_MODE=offline
 export WANDB_PROJECT="sql_patch_optimize"
 export WANDB_NAME="${MODEL_NAME}_${TIMESTAMP}"
 export WANDB_SAVE_CODE=true
-# 告诉 W&B 把缓存和元数据都写到大盘里
 export WANDB_CACHE_DIR="$DATA_ROOT/wandb_cache"
 export WANDB_CONFIG_DIR="$DATA_ROOT/wandb_config"
 
-# ==============================================================================
-# 3. 🏃‍♂️ 训练参数与执行
-# ==============================================================================
+
 TRAIN_DATA="$PROJ_DIR/data/rl_train_filter_chat_format.parquet"
 TEST_DATA="$PROJ_DIR/data/rl_dev_slowest_30.parquet"
-REWARD_FILE="$PROJ_DIR/sql_reward_record.py" # Reward 代码依然在项目里
-
+REWARD_FILE="$PROJ_DIR/sql_reward_record.py" 
 # 具体的输出子目录
 RUN_OUTPUT_DIR="${OUTPUT_DIR}/${MODEL_NAME}_grpo_${TIMESTAMP}"
 RUN_LOG_FILE="${LOG_DIR}/training_${TIMESTAMP}.log"
@@ -112,14 +97,10 @@ echo "日志文件: $RUN_LOG_FILE"
 
 } 2>&1 | tee -a "$RUN_LOG_FILE"
 
-# ==============================================================================
-# 4. 🔗 自动生成同步命令 (懒人神器)
-# ==============================================================================
-# 在大盘的 W&B 目录里找最新生成的 run
+
 LATEST_RUN=$(find "$WANDB_DIR" -maxdepth 2 -type d -name "offline-run*${TIMESTAMP}*" | head -n 1)
 
 if [ -z "$LATEST_RUN" ]; then
-    # 如果没找到带时间戳的，找最近修改的文件夹
     LATEST_RUN=$(ls -td "$WANDB_DIR"/offline-run* | head -1)
 fi
 
