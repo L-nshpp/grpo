@@ -10,7 +10,7 @@ import os
 from datetime import datetime
 
 # ==============================================================================
-# 0. 📝 全局日志配置
+# 0.  全局日志配置
 # ==============================================================================
 EXECUTION_LOG_FILE = "/data/shipei/downstream_rl/logs/sql_execution_details.jsonl"
 
@@ -24,7 +24,7 @@ def log_execution_detail(info_dict):
         print(f"Write Log Error: {e}")
 
 # ==============================================================================
-# 1. 🌍 全局数据库配置
+# 1.  全局数据库配置
 # ==============================================================================
 UNIFIED_DB_CONFIG = {
     "user": "shipei",   
@@ -43,7 +43,7 @@ DB_CONFIGS = {
 CONN_POOL = {}
 
 # ==============================================================================
-# 2. 🛠️ 核心工具函数
+# 2.  核心工具函数
 # ==============================================================================
 def get_db_cursor(db_key):
     target_key = db_key if db_key in DB_CONFIGS else "unknown"
@@ -144,7 +144,7 @@ def normalize_sql(s):
     return " ".join(s.strip().split()).lower()
 
 # ==============================================================================
-# 3. 🎯 Reward Function (Audit & Fix 专用版)
+# 3. Reward Function (Audit & Fix 专用版)
 # ==============================================================================
 def sql_optimize(data_source, solution_str, ground_truth, extra_info=None):
     log_info = {
@@ -212,26 +212,26 @@ def sql_optimize(data_source, solution_str, ground_truth, extra_info=None):
 
         if pred_err == "TIMEOUT_EXCEEDED":
             log_info["status"] = "timeout"
-            reward = 0.1 # 没崩，给点辛苦分
+            reward = 0.1 
 
         elif pred_err:
             log_info["status"] = "sql_exec_error"
-            reward = -1.0 # 语法错误，重罚
+            reward = -1.0 # 语法错误
 
         else:
             # 跑通了，检查结果
             curr_hash = hashlib.md5(str(pred_res).encode()).hexdigest()
             
             if curr_hash == gt_res_hash:
-                # 结果正确！现在检查是否偷懒（是否回退）
+                # 结果正确！现在检查是否回退
                 is_reverted = normalize_sql(pred_sql) == normalize_sql(base_sql)
                 
                 if is_reverted:
-                    # 😡 偷懒了：直接回退到 Base SQL
+                    # 直接回退到 Base SQL
                     log_info["status"] = "success_revert_bad"
                     reward = 0.1  # 惩罚分，告诉模型这不对
                 else:
-                    # 🎉 成功：结果正确，且保留了策略（代码不同于 Base）
+                    #  成功：结果正确，且保留了策略（代码不同于 Base）
                     log_info["status"] = "success_fixed_strategy"
                     reward = 1.0  # 满分
             else:
